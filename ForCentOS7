@@ -1,0 +1,67 @@
+
+#jenkins
+sudo dnf update -y
+yum install wget curl -y
+wget https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.rpm
+sudo rpm -ivh jdk-21_linux-x64_bin.rpm
+echo "export JAVA_HOME=/usr/java/jdk-21" >> /etc/profile
+echo "export PATH=$JAVA_HOME/bin:$PATH" >> /etc/profile
+source /etc/profile
+echo $JAVA_HOME
+sudo wget -O /etc/yum.repos.d/jenkins.repo \
+    https://pkg.jenkins.io/redhat-stable/jenkins.repo
+sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+sudo yum upgrade
+# Add required dependencies for the jenkins package
+sudo yum install fontconfig java-17-openjdk
+sudo yum install jenkins
+sudo systemctl daemon-reload
+sudo systemctl enable jenkins
+sudo systemctl start jenkins
+sudo systemctl status jenkins
+sudo firewall-cmd --zone=public --add-port=8080/tcp --permanent
+sudo firewall-cmd --reload
+
+#docker
+dnf -y install dnf-plugins-core
+dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+sudo dnf install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo systemctl enable --now docker
+
+#terraform
+sudo yum install -y yum-utils
+sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
+sudo yum -y install terraform
+
+#ansible
+sudo dnf install epel-release -y
+sudo dnf install ansible -y
+ansible --version
+
+#git
+yum install git -y
+
+#gcloud
+sudo tee -a /etc/yum.repos.d/google-cloud-sdk.repo << EOF
+[google-cloud-cli]
+name=Google Cloud CLI
+baseurl=https://packages.cloud.google.com/yum/repos/cloud-sdk-el9-x86_64
+enabled=1
+gpgcheck=1
+repo_gpgcheck=0
+gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+EOF
+sudo dnf clean all
+sudo dnf makecache
+sudo dnf install -y google-cloud-cli
+
+#kubectl
+sudo yum install kubectl google-cloud-sdk-gke-gcloud-auth-plugin -y
+
+#trivy
+sudo dnf update -y
+sudo dnf install -y curl wget
+curl -sfL https://github.com/aquasecurity/trivy/releases/download/v0.28.0/trivy_0.28.0_Linux-64bit.tar.gz -o trivy.tar.gz
+tar -zxvf trivy.tar.gz
+sudo mv trivy /usr/local/bin/
+trivy --version
