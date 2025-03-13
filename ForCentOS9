@@ -1,0 +1,64 @@
+#!/bin/bash
+
+# Jenkins Installation
+sudo dnf update -y
+sudo dnf install -y wget curl fontconfig git
+
+# Install Java 21
+wget https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.rpm
+sudo rpm -ivh jdk-21_linux-x64_bin.rpm
+echo "export JAVA_HOME=/usr/java/jdk-21" | sudo tee -a /etc/profile
+echo "export PATH=\$JAVA_HOME/bin:\$PATH" | sudo tee -a /etc/profile
+source /etc/profile
+echo $JAVA_HOME
+
+# Install Jenkins
+sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+sudo dnf upgrade -y
+sudo dnf install -y jenkins
+sudo systemctl daemon-reload
+sudo systemctl enable --now jenkins
+sudo systemctl status jenkins --no-pager
+sudo firewall-cmd --zone=public --add-port=8080/tcp --permanent
+sudo firewall-cmd --reload
+
+# Install Docker
+sudo dnf -y install dnf-plugins-core
+sudo dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo systemctl enable --now docker
+
+# Install Terraform
+sudo dnf install -y yum-utils
+sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
+sudo dnf install -y terraform
+
+# Install Ansible
+sudo dnf install -y epel-release
+sudo dnf install -y ansible
+ansible --version
+
+# Install Google Cloud SDK (gcloud)
+sudo tee /etc/yum.repos.d/google-cloud-sdk.repo > /dev/null << EOF
+[google-cloud-cli]
+name=Google Cloud CLI
+baseurl=https://packages.cloud.google.com/yum/repos/cloud-sdk-el9-x86_64
+enabled=1
+gpgcheck=1
+repo_gpgcheck=0
+gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+EOF
+sudo dnf clean all
+sudo dnf makecache
+sudo dnf install -y google-cloud-cli
+
+# Install kubectl & GKE Auth Plugin
+sudo dnf install -y kubectl google-cloud-sdk-gke-gcloud-auth-plugin
+
+# Install Trivy (Security Scanner)
+sudo dnf install -y curl wget
+curl -sfL https://github.com/aquasecurity/trivy/releases/download/v0.28.0/trivy_0.28.0_Linux-64bit.tar.gz -o trivy.tar.gz
+tar -zxvf trivy.tar.gz
+sudo mv trivy /usr/local/bin/
+trivy --version
